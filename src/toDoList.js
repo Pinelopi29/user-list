@@ -4,14 +4,11 @@ import List from '@material-ui/core/List';
 import ListItem from '@material-ui/core/ListItem';
 import ListItemSecondaryAction from '@material-ui/core/ListItemSecondaryAction';
 import ListItemText from '@material-ui/core/ListItemText';
-import ListItemAvatar from '@material-ui/core/ListItemAvatar';
-import Checkbox from '@material-ui/core/Checkbox';
 import { useQuery, gql, useMutation } from '@apollo/client';
 import IconButton from '@material-ui/core/IconButton';
 import ControlPointIcon from '@material-ui/icons/ControlPoint';
 import CheckCircleOutlineIcon from '@material-ui/icons/CheckCircleOutline';
 import HighlightOffIcon from '@material-ui/icons/HighlightOff';
-import FilledInput from '@material-ui/core/FilledInput';
 import TextField from '@material-ui/core/TextField';
 
 
@@ -52,12 +49,29 @@ query USER($id: ID!){
 `;
 
 const mutationAddToDo = gql`
-mutation createTodo($title: String!, $completed: Boolean!) {
-  createTodo(title: $title, completed: $completed) {
+mutation createTodo($input : CreateTodoInput!) {
+  createTodo(input: $input) {
     title
   }
 }
 `;
+
+
+const mutationUpdate = gql`
+mutation updateTodo($id: ID!, $input : UpdateTodoInput!) {
+  updateTodo(id: $id, input: $input) {
+    title
+  }
+}
+`;
+
+const mutationDelete= gql`
+mutation deleteTodo($id: ID!) {
+  deleteTodo(id: $id) 
+}
+`;
+
+
 
 
 
@@ -68,14 +82,37 @@ export default function CheckboxListSecondary(props) {
   const [checked, setChecked] = React.useState([1]);
   const [message, setMessage] = useState( '' );
   const [title, setTitle] = useState( '' );
-  const [completed, setComplete] = useState( false );
+  const [updateTitle, setUpdateTitle] = useState( '' );
+  const [deleteTitle, setDeleteTitle] = useState( id );
 
-  const [createTodo, {error}] = useMutation(mutationAddToDo, {
-    variables: {title, completed}, refetchQueries: [{query: query_todos,
-      variables: { repoFullName: 'apollographql/apollo-client' },
+  const [completed, setComplete] = useState( false );
+  const input = {
+    title, completed
+  }
+  const updateInput = {
+    updateTitle, completed
+  }
+
+  const [createTodo] = useMutation(mutationAddToDo, {
+    variables: {input}, refetchQueries: [{query: query_todos,
+      variables: {id}
     }]
-  })
- 
+  });
+
+
+  const [updateTodo] = useMutation(mutationUpdate, {
+    variables: {id, input}, refetchQueries: [{query: query_todos,
+      variables: {id}
+    }]
+  });
+
+  
+  const [deleteTodo, {error}] = useMutation(mutationDelete, {
+    variables: {id}, refetchQueries: [{query: query_todos,
+      variables: {id}
+    }]
+  });
+
   const { loading,  data } = useQuery(query_todos, {
     variables: { id },
   });
@@ -85,31 +122,9 @@ export default function CheckboxListSecondary(props) {
   if (loading) return <p>Loading...</p>;
   if (error) return <p>Error :(</p>;
 
-  // const addToDo = (value) => () => {
-  //   const { loading, error, data } = useQuery(ADD_TODO, {
-  //     variables: { message },
-  //   });
-  // };
 
   return (
-  //   <div>
-    
-  //     <form  noValidate autoComplete="off">
-  //     <TextField
-  //        type="text"
-  //        value={message}
-  //        placeholder="Add toDo"
-  //        onChange={e => setMessage(e.target.value)}/>
-  //     <IconButton style= 
-  //   {boxGap} color="primary" aria-label="todoplus" component="span">
-  //             <ControlPointIcon 
-  //                onClick={
-  //                 addToDo(message)
-  //                }
-  //               />
-  //           </IconButton>
-  //   </form>
-  // </div>
+
     <List dense className={classes.root}>
     <ListItem key={1} button>
     
@@ -120,16 +135,13 @@ export default function CheckboxListSecondary(props) {
          value={title}
          placeholder="Add toDo"
          onChange={e => setTitle(e.target.value)}/>
-      <IconButton style= 
-    {boxGap} color="primary" aria-label="todoplus" component="span">
-              <ControlPointIcon 
-                 onClick={
-                  createTodo
-                 }
-                />
-            </IconButton>
+      
     </form>
-  
+    <IconButton
+       onClick={ createTodo }
+       style= {boxGap} color="primary" aria-label="todoplus" component="span">
+              <ControlPointIcon />
+            </IconButton>
       </ListItem>
       {   data.user.todos.data.map((item, index) => {
         const labelId = `checkbox-list-secondary-label-${item.id}`;
@@ -139,34 +151,30 @@ export default function CheckboxListSecondary(props) {
            
             <ListItemText id={labelId} primary={item.title} />
             <ListItemSecondaryAction>
-            <IconButton style= 
-    {boxGap} color="primary" aria-label="todoplus" component="span">
-              <HighlightOffIcon 
-                //  onClick={
-                 
-                //  }
-                />
+            <IconButton
+              onClick={
+                updateTodo
+                
+               }
+               value={updateTitle}
+               onChange={e => setUpdateTitle(e.target.value)} 
+            style= {boxGap} color="primary" aria-label="todoplus" component="span">
+              <HighlightOffIcon/>
             </IconButton>
-            <IconButton style= 
-    {boxGap} color="primary" aria-label="todoplus" component="span">
-              <CheckCircleOutlineIcon 
-                //  onClick={
-                 
-                //  }
-                />
+            <IconButton
+              onClick={
+                deleteTodo
+                
+               }
+               value={deleteTitle}
+               onChange={e => setDeleteTitle(e.target.value)}
+               style= {boxGap} color="primary" aria-label="todoplus" component="span">
+              <CheckCircleOutlineIcon/>
             </IconButton>
-            
-              {/* <ControlPointIcon
-                edge="end"
-                // onChange={handleToggle(value)}
-                // checked={checked.indexOf(value) !== -1}
-                inputProps={{ 'aria-labelledby': labelId }}
-              /> */}
             </ListItemSecondaryAction>
           </ListItem>
         );
       })}
     </List>
-    // </div>
   );
 }
